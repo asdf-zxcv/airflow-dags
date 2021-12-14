@@ -173,7 +173,7 @@ class FutuFormatJson(OSSSaveOperator):
         result = [
             self.cls.format_(self.cls.language(), i)
             for i in json.load(
-                BytesIO(self.get_object_(self.bucket, self.oss_key).read())
+                BytesIO(self.get_object_(self.bucket, self.from_key).read())
             )
         ]
         return json.dumps(result, ensure_ascii=False)
