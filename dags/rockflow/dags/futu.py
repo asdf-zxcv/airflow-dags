@@ -25,7 +25,7 @@ with DAG("company_profile_batch_download", default_args=DEFAULT_DEBUG_ARGS) as c
 
     format_cn = FutuFormatJsonCn(
         task_id="futu_format_json_cn",
-        from_key=extract_cn.key,
+        from_key="{{ task_instance.xcom_pull('" + extract_cn.task_id + "') }}",
         key=company_profile_batch_download.dag_id,
         region=DEFAULT_REGION,
         bucket_name=DEFAULT_BUCKET_NAME,
@@ -51,7 +51,7 @@ with DAG("company_profile_batch_download", default_args=DEFAULT_DEBUG_ARGS) as c
 
     format_en = FutuFormatJsonEn(
         task_id="futu_format_json_en",
-        from_key=extract_en.key,
+        from_key="{{ task_instance.xcom_pull('" + extract_en.task_id + "') }}",
         key=company_profile_batch_download.dag_id,
         region=DEFAULT_REGION,
         bucket_name=DEFAULT_BUCKET_NAME,
