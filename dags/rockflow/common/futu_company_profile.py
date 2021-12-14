@@ -20,7 +20,7 @@ class FutuCompanyProfile(Downloader):
             f"{self.symbol}.{self.type}"
         )
 
-    @property
+    @classmethod
     def language(self):
         raise NotImplementedError()
 
@@ -64,7 +64,7 @@ class FutuCompanyProfileEn(FutuCompanyProfile):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    @property
+    @classmethod
     def language(self):
         return "en"
 
@@ -73,7 +73,7 @@ class FutuCompanyProfileEn(FutuCompanyProfile):
         return f"https://www.futunn.com/{self.language}/stock/{self.futu_ticker}/company-profile"
 
     def format(self, table_dict):
-        return self.format_(self.language, table_dict)
+        return self.format_(self.language(), table_dict)
 
     @staticmethod
     def format_(language, table_dict):
