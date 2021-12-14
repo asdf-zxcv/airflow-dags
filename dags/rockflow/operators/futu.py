@@ -147,6 +147,8 @@ class FutuExtractHtml(OSSSaveOperator):
 
 
 class FutuFormatJson(OSSSaveOperator):
+    template_fields = ["from_key"]
+
     def __init__(
             self,
             from_key: str,
