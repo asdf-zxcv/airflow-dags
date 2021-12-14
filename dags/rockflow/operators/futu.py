@@ -1,5 +1,6 @@
 import json
 import os
+from io import BytesIO
 from itertools import islice
 from multiprocessing.pool import ThreadPool as Pool
 from pathlib import Path
@@ -187,7 +188,9 @@ class FutuFormatJson(OSSSaveOperator):
     def content(self):
         result = [
             self.cls.format_(self.cls.language(), i)
-            for i in json.loads(self.get_object_(self.bucket, self.oss_key))
+            for i in json.load(
+                BytesIO(self.get_object_(self.bucket, self.oss_key).read())
+            )
         ]
         return json.dumps(result, ensure_ascii=False)
 
