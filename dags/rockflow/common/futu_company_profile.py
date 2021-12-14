@@ -92,6 +92,7 @@ class FutuCompanyProfileEn(FutuCompanyProfile):
             "Listed exchange")
         return new_table
 
+
 # class FutuCompanyProfileHk(FutuCompanyProfile):
 #     def __init__(self, *args, **kwargs):
 #         super().__init__(*args, **kwargs)
