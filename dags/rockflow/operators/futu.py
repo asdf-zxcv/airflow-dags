@@ -160,7 +160,7 @@ class FutuFormatJson(OSSSaveOperator):
     @property
     def oss_key(self):
         return os.path.join(
-            f"{self.key}_{self.from_key}_{snakecase(self.cls.__name__)}",
+            f"{self.key}_{snakecase(self.cls.__name__)}",
             f"{self.key}.json"
         )
 
