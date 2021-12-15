@@ -3,7 +3,7 @@ import os
 from io import BytesIO
 from multiprocessing.pool import ThreadPool as Pool
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict
 
 import oss2
 import pandas as pd
@@ -11,6 +11,8 @@ from stringcase import snakecase
 
 from rockflow.common.datatime_helper import GmtDatetimeCheck
 from rockflow.common.futu_company_profile import FutuCompanyProfileCn, FutuCompanyProfileEn, FutuCompanyProfile
+from rockflow.common.map_helper import join_map, join_list
+from rockflow.operators.elasticsearch import ElasticsearchOperator
 from rockflow.operators.oss import OSSSaveOperator, OSSOperator
 
 
@@ -29,6 +31,9 @@ class FutuBatchOperator(OSSOperator):
 
     @staticmethod
     def object_not_update_for_a_week(bucket: oss2.api.Bucket, key: str):
+        # TODO(speed up)
+        if FutuBatchOperator.object_exists_(bucket, key):
+            return True
         if not FutuBatchOperator.object_exists_(bucket, key):
             return False
         return GmtDatetimeCheck(
@@ -43,11 +48,14 @@ class FutuBatchOperator(OSSOperator):
             prefix=prefix,
             proxy=proxy
         )
-        if not FutuBatchOperator.object_not_update_for_a_week(bucket, obj.oss_key):
-            r = obj.get()
-            if not r:
-                return
-            FutuBatchOperator.put_object_(bucket, obj.oss_key, r.content)
+        try:
+            if not FutuBatchOperator.object_not_update_for_a_week(bucket, obj.oss_key):
+                r = obj.get()
+                if not r:
+                    return
+                FutuBatchOperator.put_object_(bucket, obj.oss_key, r.content)
+        except Exception as e:
+            print(f"Errors: {e}")
 
     @property
     def cls(self):
@@ -117,8 +125,8 @@ class FutuExtractHtml(OSSSaveOperator):
     @property
     def oss_key(self):
         return os.path.join(
-            f"{self.key}_{self.from_key}",
-            f"{self.key}.json"
+            f"{self.key}_{self.snakecase_class_name}_{self.from_key}",
+            f"{self.snakecase_class_name}.json"
         )
 
     @staticmethod
@@ -160,8 +168,8 @@ class FutuFormatJson(OSSSaveOperator):
     @property
     def oss_key(self):
         return os.path.join(
-            f"{self.key}_{snakecase(self.cls.__name__)}",
-            f"{self.key}.json"
+            f"{self.key}_{self.snakecase_class_name}_{snakecase(self.cls.__name__)}",
+            f"{self.snakecase_class_name}.json"
         )
 
     @property
@@ -195,3 +203,79 @@ class FutuFormatJsonEn(FutuFormatJson):
     @property
     def cls(self):
         return FutuCompanyProfileEn
+
+
+class JoinMap(OSSSaveOperator):
+    template_fields = ["first", "second"]
+
+    def __init__(
+            self,
+            first: str,
+            second: str,
+            merge_key: str,
+            **kwargs,
+    ) -> None:
+        super().__init__(**kwargs)
+        self.first = first
+        self.second = second
+        self.merge_key = merge_key
+
+    @property
+    def oss_key(self):
+        return os.path.join(
+            f"{self.key}_{self.snakecase_class_name}",
+            f"{self.snakecase_class_name}.json"
+        )
+
+    def load_json(self, key):
+        return json.load(
+            BytesIO(self.get_object(key).read())
+        )
+
+    def load_merge_pd(self):
+        return pd.read_csv(
+            self.get_object(self.merge_key),
+            index_col='yahoo',
+        ).to_dict('index')
+
+    @property
+    def content(self):
+        result = join_map(
+            self.load_merge_pd(),
+            join_list(
+                self.load_json(self.first),
+                self.load_json(self.second)
+            )
+        )
+        final_result = {}
+        for k, v in result.items():
+            item = {
+                vk: vv for vk, vv in v.items() if not vk.startswith("Unnamed")
+            }
+            if "raw" in item:
+                item["market_symbol"] = item["raw"]
+            if "name_en" in item:
+                item["name"] = item["name_en"]
+            final_result[k] = item
+        return json.dumps(final_result, ensure_ascii=False)
+
+
+class SinkEs(ElasticsearchOperator):
+    template_fields = ["from_key"]
+
+    def __init__(
+            self,
+            from_key: str,
+            **kwargs,
+    ) -> None:
+        super().__init__(**kwargs)
+        self.from_key = from_key
+
+    def load_json(self, key):
+        return json.load(
+            BytesIO(self.get_object(key).read())
+        )
+
+    def execute(self, context: Dict) -> None:
+        for k, v in self.load_json(self.from_key).items():
+            self.add_one_doc(k, v)

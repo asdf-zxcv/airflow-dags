@@ -70,7 +70,7 @@ search_setting = {
                 "analyzer": "prefix_pinyin_analyzer",
                 "search_analyzer": "one_ngram_search_analyzer"
             },
-            "market_symbol": {
+            "raw": {
                 "type": "text",
                 "analyzer": "prefix_pinyin_analyzer",
                 "search_analyzer": "one_ngram_search_analyzer"
@@ -80,12 +80,17 @@ search_setting = {
                 "analyzer": "prefix_pinyin_analyzer",
                 "search_analyzer": "one_ngram_search_analyzer"
             },
+            "name_en": {
+                "type": "text",
+                "analyzer": "prefix_pinyin_analyzer",
+                "search_analyzer": "one_ngram_search_analyzer"
+            },
             "name_zh": {
                 "type": "text",
                 "analyzer": "prefix_pinyin_analyzer",
                 "search_analyzer": "one_ngram_search_analyzer"
             },
-            "profile": {
+            "profile_en": {
                 "type": "keyword"
             },
             "profile_zh": {

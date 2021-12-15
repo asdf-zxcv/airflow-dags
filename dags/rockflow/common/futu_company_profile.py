@@ -70,7 +70,7 @@ class FutuCompanyProfileEn(FutuCompanyProfile):
 
     @property
     def url(self):
-        return f"https://www.futunn.com/{self.language}/stock/{self.futu_ticker}/company-profile"
+        return f"https://www.futunn.com/{self.language()}/stock/{self.futu_ticker}/company-profile"
 
     def format(self, table_dict):
         return self.format_(self.language(), table_dict)
